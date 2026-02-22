@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculateur de Poids</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0e0c;
+    --surface: #1a1916;
+    --border: #2e2c28;
+    --accent: #e8c842;
+    --accent2: #c4a030;
+    --text: #f0ede6;
+    --muted: #6b6860;
+    --danger: #e85a42;
+    --edit: #42a8e8;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+  }
+
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(3rem, 8vw, 6rem);
+    letter-spacing: 0.05em;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 48px;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 560px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .input-zone {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  input[type="number"] {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 1.5rem;
+    padding: 14px 18px;
+    outline: none;
+    transition: border-color 0.15s;
+    -moz-appearance: textfield;
+  }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  input[type="number"]:focus { border-color: var(--accent); }
+  input[type="number"]::placeholder { color: var(--muted); }
+
+  .unit-label {
+    background: var(--accent);
+    color: var(--bg);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    letter-spacing: 0.05em;
+    padding: 0 18px;
+    display: flex;
+    align-items: center;
+    border-radius: 2px;
+    user-select: none;
+  }
+
+  button {
+    width: 100%;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    letter-spacing: 0.1em;
+    padding: 14px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+  button:hover { background: var(--accent2); }
+  button:active { transform: scale(0.98); }
+
+  .total-bar {
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    border-radius: 2px;
+    padding: 20px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .total-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.2rem;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+  }
+
+  .total-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.8rem;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .total-value.bump { animation: bump 0.2s ease; }
+  @keyframes bump {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+  }
+
+  .table-wrapper {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .table-header {
+    display: grid;
+    grid-template-columns: 1fr 120px 80px;
+    padding: 10px 20px;
+    background: var(--border);
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .table-header span:nth-child(2) { text-align: right; }
+
+  .table-body {
+    max-height: 320px;
+    overflow-y: auto;
+  }
+  .table-body::-webkit-scrollbar { width: 4px; }
+  .table-body::-webkit-scrollbar-track { background: transparent; }
+  .table-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .bag-row {
+    display: grid;
+    grid-template-columns: 1fr 120px 80px;
+    align-items: center;
+    padding: 11px 20px;
+    border-bottom: 1px solid var(--border);
+    animation: slideIn 0.25s ease;
+    gap: 8px;
+    transition: background 0.15s;
+  }
+  .bag-row:last-child { border-bottom: none; }
+  .bag-row.editing { background: rgba(66,168,232,0.05); }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .bag-name {
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .bag-weight {
+    font-size: 1.05rem;
+    color: var(--text);
+    text-align: right;
+  }
+
+  .bag-actions {
+    display: flex;
+    gap: 4px;
+    justify-content: flex-end;
+  }
+
+  .edit-input {
+    background: var(--bg);
+    border: 1px solid var(--edit);
+    border-radius: 2px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.95rem;
+    padding: 4px 8px;
+    outline: none;
+    width: 100%;
+    text-align: right;
+    -moz-appearance: textfield;
+  }
+  .edit-input::-webkit-outer-spin-button,
+  .edit-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  .icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 4px 6px;
+    width: auto;
+    border-radius: 2px;
+    transition: background 0.15s, color 0.15s;
+    letter-spacing: 0;
+    line-height: 1;
+  }
+  .icon-btn:hover { transform: none; }
+  .icon-btn:active { transform: scale(0.9); }
+
+  .btn-edit  { color: var(--edit); }
+  .btn-edit:hover  { background: rgba(66,168,232,0.15); }
+
+  .btn-ok    { color: #4ae88a; }
+  .btn-ok:hover    { background: rgba(74,232,138,0.15); }
+
+  .btn-cancel { color: var(--muted); }
+  .btn-cancel:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+
+  .btn-del   { color: var(--muted); }
+  .btn-del:hover   { background: rgba(232,90,66,0.15); color: var(--danger); }
+
+  .empty-state {
+    padding: 32px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .bottom-btns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .export-btn {
+    background: transparent;
+    border: 1px solid var(--edit);
+    color: var(--edit);
+    font-size: 1rem;
+    padding: 12px;
+  }
+  .export-btn:hover { background: var(--edit); color: var(--bg); }
+
+  .reset-btn {
+    background: transparent;
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    font-size: 1rem;
+    padding: 12px;
+  }
+  .reset-btn:hover { background: var(--danger); color: var(--bg); }
+
+
+</style>
+</head>
+<body>
+
+<h1>POIDS</h1>
+<p class="subtitle">Calculateur de sacs</p>
+
+<div class="container">
+
+  <div class="input-zone">
+    <div class="input-row">
+      <input type="number" id="weightInput" placeholder="0.00" step="0.01" min="0">
+      <span class="unit-label">KG</span>
+    </div>
+    <button onclick="addBag()">+ Ajouter un sac</button>
+  </div>
+
+  <div class="total-bar">
+    <span class="total-label">Total</span>
+    <span class="total-value" id="totalDisplay">0.00 kg</span>
+  </div>
+
+  <div class="table-wrapper">
+    <div class="table-header">
+      <span>Sac</span>
+      <span>Poids</span>
+      <span></span>
+    </div>
+    <div class="table-body" id="tableBody">
+      <div class="empty-state" id="emptyState">Aucun sac ajouté</div>
+    </div>
+  </div>
+
+  <div class="bottom-btns">
+    <button class="export-btn" onclick="exportCSV()">⬇ Exporter CSV</button>
+    <button class="reset-btn" onclick="resetAll()">↺ Réinitialiser</button>
+  </div>
+
+</div>
+
+
+
+<script>
+  let bags = [];
+  let editingId = null;
+
+  const weightInput = document.getElementById('weightInput');
+  const tableBody   = document.getElementById('tableBody');
+  const emptyState  = document.getElementById('emptyState');
+  const totalDisplay = document.getElementById('totalDisplay');
+
+  weightInput.addEventListener('keydown', e => { if (e.key === 'Enter') addBag(); });
+
+  // Renumérotation automatique après chaque modification
+  function renameBags() {
+    bags.forEach((b, i) => b.name = `Sac ${i + 1}`);
+  }
+
+  function addBag() {
+    const val = parseFloat(weightInput.value);
+    if (isNaN(val) || val <= 0) {
+      weightInput.style.borderColor = 'var(--danger)';
+      setTimeout(() => weightInput.style.borderColor = '', 600);
+      weightInput.focus();
+      return;
+    }
+    bags.push({ id: Date.now(), weight: val });
+    renameBags();
+    weightInput.value = '';
+    weightInput.focus();
+    editingId = null;
+    render();
+    updateTotal();
+  }
+
+  function deleteBag(id) {
+    bags = bags.filter(b => b.id !== id);
+    renameBags(); // renumérotation
+    if (editingId === id) editingId = null;
+    render();
+    updateTotal();
+  }
+
+  function startEdit(id) {
+    editingId = id;
+    render();
+    const inp = document.getElementById('inp-' + id);
+    if (inp) { inp.focus(); inp.select(); }
+  }
+
+  function confirmEdit(id) {
+    const inp = document.getElementById('inp-' + id);
+    const val = parseFloat(inp ? inp.value : '');
+    if (isNaN(val) || val <= 0) {
+      if (inp) { inp.style.borderColor = 'var(--danger)'; setTimeout(() => inp.style.borderColor = 'var(--edit)', 500); }
+      return;
+    }
+    const bag = bags.find(b => b.id === id);
+    if (bag) bag.weight = val;
+    editingId = null;
+    render();
+    updateTotal();
+  }
+
+  function cancelEdit() {
+    editingId = null;
+    render();
+  }
+
+  function render() {
+    tableBody.querySelectorAll('.bag-row').forEach(r => r.remove());
+
+    if (bags.length === 0) { emptyState.style.display = ''; return; }
+    emptyState.style.display = 'none';
+
+    bags.forEach(bag => {
+      const row = document.createElement('div');
+      row.className = 'bag-row' + (editingId === bag.id ? ' editing' : '');
+
+      if (editingId === bag.id) {
+        row.innerHTML = `
+          <span class="bag-name">${bag.name}</span>
+          <input class="edit-input" id="inp-${bag.id}" type="number" value="${bag.weight.toFixed(2)}" step="0.01" min="0">
+          <div class="bag-actions">
+            <button class="icon-btn btn-ok"     onclick="confirmEdit(${bag.id})" title="Confirmer">✓</button>
+            <button class="icon-btn btn-cancel" onclick="cancelEdit()"            title="Annuler">✕</button>
+          </div>
+        `;
+        setTimeout(() => {
+          const inp = document.getElementById('inp-' + bag.id);
+          if (!inp) return;
+          inp.focus(); inp.select();
+          inp.addEventListener('keydown', e => {
+            if (e.key === 'Enter')  confirmEdit(bag.id);
+            if (e.key === 'Escape') cancelEdit();
+          });
+        }, 0);
+      } else {
+        row.innerHTML = `
+          <span class="bag-name">${bag.name}</span>
+          <span class="bag-weight">${bag.weight.toFixed(2)} kg</span>
+          <div class="bag-actions">
+            <button class="icon-btn btn-edit" onclick="startEdit(${bag.id})"  title="Modifier">✎</button>
+            <button class="icon-btn btn-del"  onclick="deleteBag(${bag.id})"  title="Supprimer">🗑</button>
+          </div>
+        `;
+      }
+
+      tableBody.appendChild(row);
+    });
+  }
+
+  function updateTotal() {
+    const total = bags.reduce((s, b) => s + b.weight, 0);
+    totalDisplay.textContent = total.toFixed(2) + ' kg';
+    totalDisplay.classList.remove('bump');
+    void totalDisplay.offsetWidth;
+    totalDisplay.classList.add('bump');
+  }
+
+  function resetAll() {
+    if (!bags.length) return;
+    if (!confirm('Réinitialiser tous les sacs ?')) return;
+    bags = []; editingId = null;
+    render(); updateTotal();
+  }
+
+  // ── Export CSV ──────────────────────────────────────────────────────────
+  function exportCSV() {
+    if (!bags.length) { alert('Aucun sac à exporter.'); return; }
+    const total = bags.reduce((s, b) => s + b.weight, 0);
+    // BOM UTF-8 pour Excel + séparateur point-virgule (standard FR)
+    let csv = '\uFEFF';
+    csv += 'Sac;Poids (kg)\n';
+    bags.forEach(b => {
+      // Virgule décimale pour Excel FR
+      csv += `${b.name};${b.weight.toFixed(2).replace('.', ',')}\n`;
+    });
+    csv += `\n`;
+    csv += `TOTAL;${total.toFixed(2).replace('.', ',')}\n`;
+    const a = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })),
+      download: 'sacs_poids.csv'
+    });
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+</script>
+</body>
+</html>
